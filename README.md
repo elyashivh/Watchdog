@@ -1,35 +1,92 @@
-# WATCHDOG - watchdog timer for critical code.
+# Watchdog
 
-DESCRIPTION
+**Watchdog** is a A lightweight system utility designed to monitor and automatically restart a target process if it crashes or becomes unresponsive.
 
-Watchdog is a program that verifies the execution of a specified piece of code.
+---
 
-FEATURES
+## Motivation
 
-The program will start after call WDStart() before the critical piece of code.
-The program ensure the crirical code is running until call WDStop function.
-If the critical code will terminated from any reason - the WD program will re-run
-it from the beggining.  
+This project was created to ensure the stability and continuity of user applications during critical sections of execution.
 
-INSTALLATION
+---
 
-- GCC compiler
-- Linux-based system
+## Prerequisites
 
-FILES
-- wd.so
-- wd.h
-- wd_process.out
+- Linux OS
 
-STEPS
-Attach the files to your compilation command. Add WDStart function (add the relevent
-arguments according to the API) before your critical piece of code, and WDStop after
-your critical piece of code.
+---
 
-Pay attention - the program used SIGUSR1 and SIGUSR2 during it's operation.
-		in addition, in case of fail during activate the program, it's used SIGTERM to terminate the process.
+## API
 
-LICENSE
-This project is licensed under the Infinity Labs License, and (c) Elyashiv Horden.
+### `StartWD`
 
+```c
+wd_status_t WDStart(int argc, const char* argv[], size_t interval, int tolerance);
+```
 
+**Description:**\
+Initializes the watchdog mechanism.
+
+**Parameters:**
+
+- `argc` — Argument count for the watchdog process.
+- `argv` — Argument list for the watchdog process.
+- `tolerance` — Number of consecutive missed signals allowed before revival starts.
+- `interval` — Interval (in secons) between signals sent between the two processes.
+
+**Returns:**
+
+- WD_SUCCESS on success
+- WD_FAIL on failure
+
+---
+
+### `StopWD`
+
+```c
+void WDStop();
+```
+
+**Description:**\
+Stops the watchdog cleanly, sends termination signals to both processes, and frees resources.
+
+---
+
+## Setup & Usage
+
+### Build Instructions
+
+```bash
+
+cd Watchdog
+make
+```
+
+executables files:
+
+1. test_wd.out
+2. wd_process.out
+
+---
+
+### Running the Program
+
+Basic usage:
+
+```bash
+./test_wd.out
+```
+
+---
+
+## How It Works
+
+1. The user app starts the watchdog using `WDStart()`, specifying signal interval, tolerance, and args.
+2. The app forks and runs `wd_process.out`, while also starting a worker thread.
+3. `Origin` processes send `SIGUSR1` signal and the `wd_process` send `SIGUSR2` each other at the specified interval.
+4. If a process misses `tolerance` signals, the other process revives it:
+   - The user app restarts the watchdog.
+   - The watchdog takes over and restarts the user app.
+5. Calling `WDStop()` shuts down both processes and cleans up.
+
+## Pay attention - the program used SIGUSR1 and SIGUSR2 during it's operation. in addition, in case of fail during activate the program, it's used SIGTERM to terminate the process.
